@@ -18,17 +18,18 @@ public class GitHubUserService {
         this.webClient = webClient;
     }
 
-    public Mono<List<RepositoryWithBranches>> geGitHubUserRepositoriesData(String username) {
+    public Flux<List<RepositoryWithBranches>> getGitHubUserRepositoriesData(String username) {
         return dropForks(username)
                 .flatMap(repository -> getRepositories(repository, username))
-                .collectList();
+                .collectList()
+                .flux();
     }
 
-    public Mono<RepositoryWithBranches> getRepositories(UserRepository repository, String username) {
+    private Flux<RepositoryWithBranches> getRepositories(UserRepository repository, String username) {
         return fetchBranches(username, repository.repositoryName())
                 .map(this::mapToBranch)
                 .collectList()
-                .map(branches -> new RepositoryWithBranches(repository.repositoryName(), repository.ownerLogin(), branches));
+                .flatMapMany(branches -> Flux.just(new RepositoryWithBranches(repository.repositoryName(), repository.ownerLogin(), branches)));
     }
 
     private Flux<RepositoryDto> fetchRepositories(String username) {

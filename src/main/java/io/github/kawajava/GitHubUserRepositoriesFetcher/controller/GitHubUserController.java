@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
-import reactor.core.publisher.Mono;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 
@@ -22,10 +22,10 @@ public class GitHubUserController {
     }
 
     @GetMapping("/{username}")
-    public Mono<List<RepositoryWithBranches>> getUserData(@PathVariable String username,
-                                                       @RequestHeader(HttpHeaders.ACCEPT) String accept) {
+    public Flux<List<RepositoryWithBranches>> getUserData(@PathVariable String username,
+                                                          @RequestHeader(HttpHeaders.ACCEPT) String accept) {
         return accept.equals(MediaType.APPLICATION_JSON_VALUE) ?
-                userService.geGitHubUserRepositoriesData(username) : Mono.empty();
+                userService.getGitHubUserRepositoriesData(username) : Flux.empty();
     }
 
 }
