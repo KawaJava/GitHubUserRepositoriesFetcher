@@ -24,17 +24,12 @@ public class GitHubUserService {
                 .collectList();
     }
 
-//    private Flux<RepositoryWithBranches> getRepositories(UserRepository repository, String username) {
-//        return fetchBranches(username, repository.repositoryName())
-//                .map(this::mapToBranch)
-//                .map(branches -> new RepositoryWithBranches(repository.repositoryName(), repository.ownerLogin(), branches));
-//    }
-public Mono<RepositoryWithBranches> getRepositories(UserRepository repository, String username) {
-    return fetchBranches(username, repository.repositoryName())
-            .map(this::mapToBranch)
-            .collectList()
-            .map(branches -> new RepositoryWithBranches(repository.repositoryName(), repository.ownerLogin(), branches));
-}
+    public Mono<RepositoryWithBranches> getRepositories(UserRepository repository, String username) {
+        return fetchBranches(username, repository.repositoryName())
+                .map(this::mapToBranch)
+                .collectList()
+                .map(branches -> new RepositoryWithBranches(repository.repositoryName(), repository.ownerLogin(), branches));
+    }
 
     private Flux<RepositoryDto> fetchRepositories(String username) {
         return this.webClient.get()
