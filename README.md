@@ -9,6 +9,7 @@ Application is written in Java 21 and Spring Boot and is based on Github API. Ap
 ![Mockito](https://img.shields.io/badge/Mockito-yellow?style=for-the-badge)
 ![AssertJ](https://img.shields.io/badge/AssertJ-blue?style=for-the-badge)
 ![JUnit](https://img.shields.io/badge/JUnit-purple?style=for-the-badge)
+![Maven](https://img.shields.io/badge/Maven-gray?style=for-the-badge)
 
 ## Technologies Used
 
@@ -26,7 +27,7 @@ Clone the project
 ```bash
 git clone https://github.com/KawaJava/GitHubUserRepositoriesFetcher.git
 ```
-## Build the project using Maven or Gradle:
+## Build the project using Maven:
 ```bash
 ./mvnw clean install
 ```
