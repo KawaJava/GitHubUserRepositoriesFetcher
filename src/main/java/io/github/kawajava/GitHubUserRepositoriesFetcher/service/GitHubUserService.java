@@ -32,7 +32,7 @@ public class GitHubUserService {
                 .flatMapMany(branches -> Flux.just(new RepositoryWithBranches(repository.repositoryName(), repository.ownerLogin(), branches)));
     }
 
-    private Flux<RepositoryDto> fetchRepositories(String username) {
+    Flux<RepositoryDto> fetchRepositories(String username) {
         return this.webClient.get()
                 .uri("/users/{username}/repos", username)
                 .retrieve()
@@ -41,22 +41,22 @@ public class GitHubUserService {
                 .bodyToFlux(RepositoryDto.class);
     }
 
-    private Branch mapToBranch(BranchDto branch) {
+    Branch mapToBranch(BranchDto branch) {
         return new Branch(branch.name(), branch.commit().sha());
     }
 
-    private UserRepository mapToUserRepository(RepositoryDto repository) {
+    UserRepository mapToUserRepository(RepositoryDto repository) {
         return new UserRepository(repository.name(), repository.owner().login());
     }
 
-    private Flux<BranchDto> fetchBranches(String username, String repoName) {
+    Flux<BranchDto> fetchBranches(String username, String repoName) {
         return this.webClient.get()
                 .uri("/repos/{user}/{repo}/branches", username, repoName)
                 .retrieve()
                 .bodyToFlux(BranchDto.class);
     }
 
-    private Flux<UserRepository> dropForks(String username) {
+    Flux<UserRepository> dropForks(String username) {
         return fetchRepositories(username)
                 .filter(repository -> !repository.isFork())
                 .map(this::mapToUserRepository);
