@@ -30,15 +30,10 @@ class GitHubUserServiceTest {
 
     private final boolean ISFORK = true;
     private final boolean ISNOTFORK = false;
+    private final String username = "kamilbrzezinski";
 
     @Mock
     private WebClient webClient;
-
-//    @Mock
-//    private WebClient.RequestHeadersUriSpec<?> requestHeadersUriSpec;
-//
-//    @Mock
-//    private WebClient.RequestHeadersSpec<?> requestHeadersSpec;
 
     @Mock
     private WebClient.ResponseSpec responseSpec;
@@ -46,11 +41,6 @@ class GitHubUserServiceTest {
     @InjectMocks
     private GitHubUserService userService = new GitHubUserService(webClient);
 
-//    @Before
-//    public void setUp() {
-//        MockitoAnnotations.openMocks(this);
-//        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
-//    }
     @Before
     public void setUp() {
         WebClient webClient = WebClient.builder().baseUrl("https://api.github.com").build();
@@ -60,13 +50,13 @@ class GitHubUserServiceTest {
 
     @Test
     public void shouldFetchRepositoriesCorrectly() {
-        var repositoryDto = new RepositoryDto("aspectj", new Owner("kamilbrzezinski"), ISFORK);
+        var repositoryDto = new RepositoryDto("aspectj", new Owner(username), ISFORK);
 
         stubFor(get(urlEqualTo("/users/kamilbrzezinski/repos"))
                 .willReturn(aResponse()
                         .withBody(getUserRepositoriesResponse())
                         .withStatus(HttpStatus.OK.value())));
-        var repositoryDtoFlux = userService.fetchRepositories("kamilbrzezinski");
+        var repositoryDtoFlux = userService.fetchRepositories(username);
         StepVerifier.create(repositoryDtoFlux)
                 .expectNext(repositoryDto)
                 .verifyComplete();
@@ -87,7 +77,7 @@ class GitHubUserServiceTest {
                         .withBody(getRepositoryBranchesResponse())
                         .withStatus(HttpStatus.OK.value())));
 
-        var branchDtoFlux = userService.fetchBranches("kamilbrzezinski", "aspectj");
+        var branchDtoFlux = userService.fetchBranches(username, "aspectj");
         StepVerifier.create(branchDtoFlux)
                 .expectNext(branch)
                 .verifyComplete();
@@ -109,11 +99,11 @@ class GitHubUserServiceTest {
 
     @Test
     void testMapToUserRepositoryCorrectly() {
-        var owner = new Owner("kamilbrzezinski");
+        var owner = new Owner(username);
         var repository = new RepositoryDto( "aspectj", owner, ISNOTFORK);
         var repositoryDto = userService.mapToUserRepository(repository);
         assertThat(repositoryDto.repositoryName()).isEqualTo("aspectj");
-        assertThat(repositoryDto.ownerLogin()).isEqualTo("kamilbrzezinski");
+        assertThat(repositoryDto.ownerLogin()).isEqualTo(username);
     }
 
     @Test
@@ -127,11 +117,11 @@ class GitHubUserServiceTest {
 
     @Test
     public void shouldDropForksCorrectly() {
-        var repo1 = new RepositoryDto("aspectj", new Owner("kamilbrzezinski"), ISNOTFORK);
+        var repo1 = new RepositoryDto("aspectj", new Owner(username), ISNOTFORK);
         var repo2 = new RepositoryDto("fork", new Owner("kamilbrzezinski753"), ISFORK);
         when(responseSpec.bodyToFlux(RepositoryDto.class)).thenReturn(Flux.just(repo1, repo2));
 
-        StepVerifier.create(userService.dropForks("kamilbrzezinski"))
+        StepVerifier.create(userService.dropForks(username))
                 .expectNext(new UserRepository("repo1", "kamilbrzezinski"))
                 .verifyComplete();
     }
