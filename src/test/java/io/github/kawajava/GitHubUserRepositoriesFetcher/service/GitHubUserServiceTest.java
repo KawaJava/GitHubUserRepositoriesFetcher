@@ -44,8 +44,6 @@ class GitHubUserServiceTest {
     @Before
     public void setUp() {
         WebClient webClient = WebClient.builder().baseUrl("https://api.github.com").build();
-//        when(webClientBuilder.baseUrl(anyString())).thenReturn(webClientBuilder);
-//        when(webClientBuilder.build()).thenReturn(webClient);
     }
 
     @Test

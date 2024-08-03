@@ -20,6 +20,7 @@ import reactor.core.publisher.Flux;
 import java.util.Collections;
 import java.util.List;
 
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.Mockito.when;
 
 @WebFluxTest(controllers = GitHubUserController.class)
@@ -54,15 +55,35 @@ class GitHubUserControllerTest {
         var repo2 = new RepositoryWithBranches("repo2", "",
                 List.of(new Branch("dev", "sha2")));
         var repos = List.of(repo1, repo2);
-        Mockito.when(userService.getGitHubUserRepositoriesData(username)).thenReturn(Flux.just(repos));
+
+        when(userService.getGitHubUserRepositoriesData("kamilbrzezinski")).thenReturn(Flux.just(repos));
 
         webTestClient.get()
-                .uri("/" + username)
+                .uri("/kamilbrzezinski")
                 .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
                 .exchange()
                 .expectStatus().isOk()
                 .expectHeader().contentType(MediaType.APPLICATION_JSON_VALUE)
-                .expectBodyList(RepositoryWithBranches.class);
+                .expectBodyList(RepositoryWithBranches.class)
+                .consumeWith(response -> {
+                    List<RepositoryWithBranches> responseBody = response.getResponseBody();
+                    assertThat(responseBody).isNotNull();
+                    assertThat(responseBody).hasSize(2);
+
+                    var responseRepo1 = responseBody.get(0);
+                    assertThat(responseRepo1.repositoryName()).isEqualTo("aspectj");
+                    assertThat(responseRepo1.ownerLogin()).isEqualTo("kamilbrzezinski");
+                    assertThat(responseRepo1.branches()).hasSize(1);
+                    assertThat(responseRepo1.branches().get(0).name()).isEqualTo("master");
+                    assertThat(responseRepo1.branches().get(0).lastCommitSha()).isEqualTo("5be19feeced5afc98de8e19deff86d5feff2a795");
+
+                    var responseRepo2 = responseBody.get(1);
+                    assertThat(responseRepo2.repositoryName()).isEqualTo("repo2");
+                    assertThat(responseRepo2.ownerLogin()).isEmpty();
+                    assertThat(responseRepo2.branches()).hasSize(1);
+                    assertThat(responseRepo2.branches().get(0).name()).isEqualTo("dev");
+                    assertThat(responseRepo2.branches().get(0).lastCommitSha()).isEqualTo("sha2");
+                });
     }
 
     @Test
@@ -76,6 +97,8 @@ class GitHubUserControllerTest {
                 .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_XML_VALUE)
                 .exchange()
                 .expectStatus().is4xxClientError()
-                .expectBodyList(Object.class);
+                .expectBodyList(Object.class)
+                .hasSize(1)
+        ;
     }
 }
