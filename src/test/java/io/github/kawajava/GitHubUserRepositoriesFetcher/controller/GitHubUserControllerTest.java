@@ -2,37 +2,27 @@ package io.github.kawajava.GitHubUserRepositoriesFetcher.controller;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
-import io.github.kawajava.GitHubUserRepositoriesFetcher.model.Branch;
 import io.github.kawajava.GitHubUserRepositoriesFetcher.model.RepositoryWithBranches;
-import io.github.kawajava.GitHubUserRepositoriesFetcher.service.GitHubUserService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
-import reactor.core.publisher.Flux;
 
-import java.util.Collections;
 import java.util.List;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-import static org.mockito.Mockito.when;
 
-@WebFluxTest(controllers = GitHubUserController.class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class GitHubUserControllerTest {
-
-    private final String username = "kamilbrzezinski";
 
     @Autowired
     private WebTestClient webTestClient;
-
-    @MockBean
-    private GitHubUserService userService;
 
     private WireMockServer wireMockServer;
 
@@ -50,14 +40,12 @@ class GitHubUserControllerTest {
 
     @Test
     public void shouldGetUserDataWithValidAcceptHeadersCorrectly() {
-        var repo1 = new RepositoryWithBranches("aspectj", "kamilbrzezinski",
-                List.of(new Branch("master", "5be19feeced5afc98de8e19deff86d5feff2a795")));
-        var repo2 = new RepositoryWithBranches("repo2", "",
-                List.of(new Branch("dev", "sha2")));
-        var repos = List.of(repo1, repo2);
-
-        when(userService.getGitHubUserRepositoriesData("kamilbrzezinski")).thenReturn(Flux.just(repos));
-
+        WireMock.stubFor(WireMock.get(WireMock.urlEqualTo("/kamilbrzezinski"))
+                .withHeader(HttpHeaders.ACCEPT, equalTo(MediaType.APPLICATION_JSON_VALUE))
+                .willReturn(WireMock.aResponse()
+                        .withStatus(200)
+                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                        .withBody(getValidAcceptHeaderResponse())));
         webTestClient.get()
                 .uri("/kamilbrzezinski")
                 .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
@@ -88,17 +76,44 @@ class GitHubUserControllerTest {
 
     @Test
     void shouldNotReturnRepositoriesWhenHeaderIsWrong() {
-        when(userService.getGitHubUserRepositoriesData(username)).thenReturn(Flux.just());
-        Flux<List<RepositoryWithBranches>> response = Flux.just(Collections.emptyList());
-        Mockito.when(userService.getGitHubUserRepositoriesData(username)).thenReturn(response);
+        WireMock.stubFor(WireMock.get(WireMock.urlEqualTo("/kamilbrzezinski"))
+                .withHeader(HttpHeaders.ACCEPT, equalTo(MediaType.APPLICATION_XML_VALUE))
+                .willReturn(WireMock.aResponse()
+                        .withStatus(406)));
 
         webTestClient.get()
-                .uri("/" + username)
+                .uri("/kamilbrzezinski")
                 .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_XML_VALUE)
                 .exchange()
-                .expectStatus().is4xxClientError()
+                .expectStatus().isEqualTo(HttpStatus.NOT_ACCEPTABLE)
                 .expectBodyList(Object.class)
-                .hasSize(1)
-        ;
+                .hasSize(0);
     }
+
+    private String getValidAcceptHeaderResponse() {
+        return """
+                [
+                    {
+                        "repositoryName": "aspectj",
+                        "ownerLogin": "kamilbrzezinski",
+                        "branches": [
+                            {
+                                "name": "master",
+                                "lastCommitSha": "5be19feeced5afc98de8e19deff86d5feff2a795"
+                            }
+                        ]
+                    },
+                    {
+                        "repositoryName": "repo2",
+                        "ownerLogin": "",
+                        "branches": [
+                            {
+                                "name": "dev",
+                                "lastCommitSha": "sha2"
+                            }
+                        ]
+                    }
+                ]
+                """;
+        }
 }
